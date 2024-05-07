@@ -1,0 +1,17 @@
+[
+    {
+        "id": 1,
+        "name": "RP1",
+        "subordinateOf": 1
+    },
+    {
+        "id": 2,
+        "name": "RP2",
+        "subordinateOf": 1
+    },
+    {
+        "id": 1,
+        "name": "RP3",
+        "subordinateOf": 1
+    }
+]
