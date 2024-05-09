@@ -6,9 +6,9 @@ from neo4j import GraphDatabase
 load_dotenv()
 
 uri = "bolt://localhost:7687"
-USER=os.getenv('USER')
-PASSWORD=os.getenv('PASSWORD')
-AUTH = (USER, PASSWORD)
+DB_USER=os.getenv('DB_USER')
+DB_PASSWORD=os.getenv('DB_PASSWORD')
+AUTH = (DB_USER, DB_PASSWORD)
 
 
 def _create_rm_node(tx, name):
