@@ -1,9 +1,14 @@
-from neo4j import GraphDatabase
+import os
 import json
+from dotenv import load_dotenv
+from neo4j import GraphDatabase
 
+load_dotenv()
 
 uri = "bolt://localhost:7687"
-AUTH = ("neo4j", "U3z3W839YndB")
+USER=os.getenv('USER')
+PASSWORD=os.getenv('PASSWORD')
+AUTH = (USER, PASSWORD)
 
 
 def _create_rm_node(tx, name):
@@ -105,7 +110,7 @@ def insert_all_rps(session, rms):
 
 
 def insert_all_rds(session, rms):
-    with open('data/rd.json') as file:
+    with open('sample/rd.json') as file:
         data = json.load(file)
         rds_payload = []
         for rd in data:
