@@ -5,10 +5,11 @@ from neo4j import GraphDatabase
 
 load_dotenv()
 
-uri = "bolt://localhost:7687"
-DB_USER=os.getenv('DB_USER')
-DB_PASSWORD=os.getenv('DB_PASSWORD')
-AUTH = (DB_USER, DB_PASSWORD)
+DATA_BASE_URL = "bolt://localhost:7687"
+USER = os.getenv('DB_USER')
+PASSWORD = os.getenv('DB_PASSWORD')
+AUTH = (USER, PASSWORD)
+DATA_PATH = "data"  # or use sample to test
 
 
 def _create_rm_node(tx, name):
@@ -19,12 +20,36 @@ def _create_rm_node(tx, name):
     return record["node_id"]
 
 
-def _create_rp_node(tx, name, rm_id):
-    query = ("CREATE (rv:RV {name: $name, id: randomUUID()})"
-             "WITH rv"
+def _create_rp1_node(tx, name, rm_id):
+    query = ("CREATE (rp1:RP1 {name: $name, id: randomUUID()})"
+             "WITH rp1"
              " MATCH (rm {id:$id})"
-             " CREATE (rv)-[:SUBORDINATED_TO]->(rm)"
-             " RETURN rv.id AS node_id"
+             " CREATE (rp1)-[:SUBORDINATED_TO]->(rm)"
+             " RETURN rp1.id AS node_id"
+             )
+    result = tx.run(query, name=name, id=rm_id)
+    record = result.single()
+    return record["node_id"]
+
+
+def _create_rp2_node(tx, name, rm_id):
+    query = ("CREATE (rp2:RP2 {name: $name, id: randomUUID()})"
+             "WITH rp2"
+             " MATCH (rm {id:$id})"
+             " CREATE (rp2)-[:SUBORDINATED_TO]->(rm)"
+             " RETURN rp2.id AS node_id"
+             )
+    result = tx.run(query, name=name, id=rm_id)
+    record = result.single()
+    return record["node_id"]
+
+
+def _create_rp3_node(tx, name, rm_id):
+    query = ("CREATE (rp3:RP3 {name: $name, id: randomUUID()})"
+             "WITH rp3"
+             " MATCH (rm {id:$id})"
+             " CREATE (rp3)-[:SUBORDINATED_TO]->(rm)"
+             " RETURN rp3.id AS node_id"
              )
     result = tx.run(query, name=name, id=rm_id)
     record = result.single()
@@ -80,7 +105,7 @@ def _create_rv_node(tx, name, rm_id):
 
 
 def insert_all_rms(session):
-    with open('sample/rm.json') as file:
+    with open(f"{DATA_PATH}/rm.json") as file:
         data = json.load(file)
         rms_payload = []
         for item in data:
@@ -92,8 +117,8 @@ def insert_all_rms(session):
     return rms_payload
 
 
-def insert_all_rps(session, rms):
-    with open('sample/rp.json') as file:
+def insert_all_rps1(session, rms):
+    with open(f"{DATA_PATH}/rp1.json") as file:
         data = json.load(file)
         rps_payload = []
         for rp in data:
@@ -101,7 +126,41 @@ def insert_all_rps(session, rms):
                 (item for item in rms if item["id"] == rp["subordinateOf"]), False)
             if rm:
                 id = session.execute_write(
-                    _create_rp_node, rp["name"], rm["db_id"])
+                    _create_rp1_node, rp["name"], rm["db_id"])
+                rps_payload.append({
+                    "id": rp["id"],
+                    "db_id": id
+                })
+    return rps_payload
+
+
+def insert_all_rps2(session, rms):
+    with open(f'{DATA_PATH}/rp2.json') as file:
+        data = json.load(file)
+        rps_payload = []
+        for rp in data:
+            rm = next(
+                (item for item in rms if item["id"] == rp["subordinateOf"]), False)
+            if rm:
+                id = session.execute_write(
+                    _create_rp2_node, rp["name"], rm["db_id"])
+                rps_payload.append({
+                    "id": rp["id"],
+                    "db_id": id
+                })
+    return rps_payload
+
+
+def insert_all_rps3(session, rms):
+    with open(f'{DATA_PATH}/rp3.json') as file:
+        data = json.load(file)
+        rps_payload = []
+        for rp in data:
+            rm = next(
+                (item for item in rms if item["id"] == rp["subordinateOf"]), False)
+            if rm:
+                id = session.execute_write(
+                    _create_rp3_node, rp["name"], rm["db_id"])
                 rps_payload.append({
                     "id": rp["id"],
                     "db_id": id
@@ -110,7 +169,7 @@ def insert_all_rps(session, rms):
 
 
 def insert_all_rds(session, rms):
-    with open('sample/rd.json') as file:
+    with open(f'{DATA_PATH}/rd.json') as file:
         data = json.load(file)
         rds_payload = []
         for rd in data:
@@ -127,7 +186,7 @@ def insert_all_rds(session, rms):
 
 
 def insert_all_rgs(session, rds):
-    with open('sample/rg.json') as file:
+    with open(f'{DATA_PATH}/rg.json') as file:
         data = json.load(file)
         rgs_payload = []
         for rg in data:
@@ -144,7 +203,7 @@ def insert_all_rgs(session, rds):
 
 
 def insert_all_rcs(session, rgs):
-    with open('sample/rc.json') as file:
+    with open(f'{DATA_PATH}/rc.json') as file:
         data = json.load(file)
         rcs_payload = []
         for rc in data:
@@ -161,7 +220,7 @@ def insert_all_rcs(session, rgs):
 
 
 def insert_all_rvs(session, rcs):
-    with open('sample/rv.json') as file:
+    with open(f'{DATA_PATH}/rv.json') as file:
         data = json.load(file)
         rvs_payload = []
         for rv in data:
@@ -178,10 +237,12 @@ def insert_all_rvs(session, rcs):
 
 
 def run():
-    driver = GraphDatabase.driver(uri, auth=AUTH)
+    driver = GraphDatabase.driver(DATA_BASE_URL, auth=AUTH)
     with driver.session() as session:
         rms = insert_all_rms(session)
-        insert_all_rps(session, rms)
+        insert_all_rps1(session, rms)
+        insert_all_rps2(session, rms)
+        insert_all_rps3(session, rms)
         rds = insert_all_rds(session, rms)
         rgs = insert_all_rgs(session, rds)
         rcs = insert_all_rcs(session, rgs)

@@ -1,7 +1,10 @@
 import argparse
 from faker import Faker
 import random
-import uuid
+import json
+from pathlib import Path
+import time
+import os
 
 
 fake = Faker()
@@ -12,6 +15,13 @@ LAYERS = {
     "2": ["RG"],
     "3": ["RC"],
     "4": ["RV"]
+}
+
+SUB_LAYERS = {
+    "1":  "RD",
+    "2": "RG",
+    "3": "RC",
+    "4": "RV"
 }
 
 PERCENTAGE_OF_POPULATION = {
@@ -26,9 +36,13 @@ PERCENTAGE_OF_POPULATION = {
 
 
 def write_data(data):
-    pass
-    # with open("data/jobs.json", 'w',encoding='utf-8') as file:
-    #     json.dump(jobs, file,ensure_ascii=False)
+    os.system(f'rm -f data/*')
+    Path("data").mkdir(parents=True, exist_ok=True)
+    for tree in data:
+        for key in tree.keys():
+            payload = tree[str(key)]
+            with open(f"data/{key.lower()}.json", 'a', encoding='utf-8') as file:
+                json.dump(payload, file, ensure_ascii=False)
 
 
 def generate_cpf():
@@ -38,7 +52,7 @@ def generate_cpf():
 
 def new_person():
     return {
-        "id": uuid.uuid4(),
+        "id": time.time(),
         "name": fake.name(),
         "cpf": generate_cpf(),
         "name": fake.name(),
@@ -48,28 +62,33 @@ def new_person():
 
 def generate_persons(n, subordinate_of):
     data = []
-    for i in range(n+1):
+    for i in range(n):
         p = new_person()
         p["subordinateOf"] = subordinate_of
         data.append(p)
-    return p
+    return data
 
 
 def generate_new_three(layers_number, layers_element_numbers):
     rm = new_person()
-    # three = {"0": rm}
-    # for layear_number in range(layers_number):
-    #     layear_labels = LAYERS[str(layear_number+1)]
-    #     for label in layear_labels:
-    #         percentage = PERCENTAGE_OF_POPULATION[str(label)]
-    #         number_of_elements = int(layers_element_numbers*percentage)
-    #         if label in ["RP1", "RP2", "RP3"]:
-    #             three[label] = generate_persons(number_of_elements, rm["id"])
-    #         else:
-    #             pass
+    tree = {"RM": [rm]}
+    for layear_number in range(1, layers_number+1):
+        layear_labels = LAYERS[str(layear_number)]
+        for label in layear_labels:
+            if label not in tree:
+                tree[label]=[]
+            percentage = PERCENTAGE_OF_POPULATION[str(label)]
+            number_of_elements = int(layers_element_numbers*percentage)
+            if label in ["RP1", "RP2", "RP3", "RD"]:
+                tree[label] = generate_persons(number_of_elements, rm["id"])
+            else:
+                overlayer_label = SUB_LAYERS[str(layear_number-1)]
+                overlayer_items = tree[str(overlayer_label)]
+                for overlayer in overlayer_items:
+                    tree[label]=tree[label]+generate_persons(number_of_elements, overlayer["id"])
 
-    #         print(f"Generate {number_of_elements} - {label}")
-    # print(three)
+            print(f"Generated {number_of_elements} -> {label}")
+    return tree
 
 
 def generate(rm_number, layers_number, element_numbers):
@@ -86,7 +105,7 @@ if __name__ == "__main__":
     parser.add_argument("--layers_number", type=int,
                         help="Numero de Camadas abaixo do RM que devem ser criadas(Default: 4 MIN:1)")
     parser.add_argument("--element_numbers", type=int,
-                        help="Numero de elementos  camada(Default:20)")
+                        help="Numero de elementos base (Default:20)")
     args = parser.parse_args()
     rm_number = args.rm_number
     layers_number = args.layers_number
