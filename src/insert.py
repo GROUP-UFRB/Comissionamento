@@ -5,7 +5,7 @@ from neo4j import GraphDatabase
 
 load_dotenv()
 
-DATA_BASE_URL = "bolt://localhost:7687"
+DATABASE_URL = "bolt://localhost:7687"
 USER = os.getenv('DB_USER')
 PASSWORD = os.getenv('DB_PASSWORD')
 AUTH = (USER, PASSWORD)
@@ -237,7 +237,7 @@ def insert_all_rvs(session, rcs):
 
 
 def run():
-    driver = GraphDatabase.driver(DATA_BASE_URL, auth=AUTH)
+    driver = GraphDatabase.driver(DATABASE_URL, auth=AUTH)
     with driver.session() as session:
         rms = insert_all_rms(session)
         insert_all_rps1(session, rms)
