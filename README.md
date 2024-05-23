@@ -31,6 +31,18 @@ pip install -r requirements.txt
  docker-compose up -d
 ```
 
+## Generate data:
+
+```shell
+python src/data/generate_data.py <args>
+```
+
+## Insert data
+
+```shell
+python src/insert.py
+```
+
 ## Query utils
 
 ```shell
