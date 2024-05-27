@@ -63,25 +63,25 @@ def insert_all_employees(session, supervisors, employee_type):
 
 
 def set_commission(session):
-    query = (
-        "MATCH (rm:RM)"
-        " MATCH (rd:RD)"
-        " MATCH (rp1:RP1)"
-        " MATCH (rp2:RP2)"
-        " MATCH (rp3:RP3)"
-        " MATCH (rg:RG)"
-        " MATCH (rc:RC)"
-        " MATCH (rv:RV)"
-        " SET rm.continuous_commission = 0.03, rm.sporadic_commission = 0.06, rm.high_cost_commission = 0.08"
-        " SET rd.continuous_commission = 0.04, rd.sporadic_commission = 0.07, rd.high_cost_commission = 0.09"
-        " SET rp1.continuous_commission = 0.20, rp1.sporadic_commission = 0.30, rp1.high_cost_commission = 0.40"
-        " SET rp2.continuous_commission = 0.25, rp2.sporadic_commission = 0.35, rp2.high_cost_commission = 0.50"
-        " SET rp3.continuous_commission = 0.34, rp3.sporadic_commission = 0.47, rp3.high_cost_commission = 0.69"
-        " SET rg.continuous_commission = 0.05, rg.sporadic_commission = 0.08, rg.high_cost_commission = 0.10"
-        " SET rc.continuous_commission = 0.10, rc.sporadic_commission = 0.12, rc.high_cost_commission = 0.20"
-        " SET rv.continuous_commission = 0.15, rv.sporadic_commission = 0.20, rv.high_cost_commission = 0.30"
-    )
-    session.run(query)
+    commissions = [
+        ("RM", 0.03, 0.06, 0.08),
+        ("RD", 0.04, 0.07, 0.09),
+        ("RP1", 0.20, 0.30, 0.40),
+        ("RP2", 0.25, 0.35, 0.50),
+        ("RP3", 0.34, 0.47, 0.69),
+        ("RG", 0.05, 0.08, 0.10),
+        ("RC", 0.10, 0.12, 0.20),
+        ("RV", 0.15, 0.20, 0.30),
+    ]
+
+    for label, continuous, sporadic, high_cost in commissions:
+        query = (
+            f"MATCH (n: {label}) "
+            f"SET n.continuous_commission = {continuous}, "
+            f"n.sporadic_commission = {sporadic}, "
+            f"n.high_cost_commission = {high_cost} "
+        )
+        session.run(query)
 
 
 def run():
