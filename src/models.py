@@ -1,27 +1,8 @@
 from pydantic import BaseModel
-from enum import Enum
 
+from typing import Literal
 
-class TypeCommission(str, Enum):
-    continuous_commission = "continuous_commission"
-    sporadic_commission = "sporadic_commission"
-    high_cost_commission = "high_cost_commission"
-
-
-class TypeRole(str, Enum):
-    RM = "RM"
-    RD = "RD"
-    RP1 = "RP1"
-    RP2 = "RP2"
-    RP3 = "RP3"
-    RG = "RG"
-    RC = "RC"
-    RV = "RV"
-
-
-class Commission(BaseModel):
-    type_commission: TypeCommission
-    value: float
+TypeRole = Literal["RM", "RD", "RP1", "RP2", "RP3", "RG", "RC", "RV"]
 
 
 class User(BaseModel):
@@ -31,3 +12,9 @@ class User(BaseModel):
 
 class Role(BaseModel):
     role: TypeRole
+
+
+class Commission(BaseModel):
+    type_commission: Literal["continuous", "sporadic", "high_cost"]
+    value: float
+    user: User

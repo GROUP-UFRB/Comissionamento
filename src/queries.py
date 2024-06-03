@@ -125,35 +125,94 @@ async def get_hierarchy_with_fails():
         print(f"Erro: {e}")
 
 
+def find_index(matrix, target):
+    for i, row in enumerate(matrix):
+        if target in row:
+            return (i, row.index(target))
+    return None
+
+
 @app.get("/compute_commission")
-async def compute_commission(
-    commission: Commission,
-):
+async def compute_commission(commission: Commission):
     """
     Calcular o comissionamento de um medicamento a partir do seu tipo e o seu valor bruto
     """
-    # >>>>>> RETORNA O COMISSIONAMENTO DE ACORDO COM O TIPO DE MEDICAMENTO E COM A HIERARQUIA
-    # MATCH path = (x)<-[:SUBORDINATED_TO*0..]-(:RV {name: "Arthur Brooks"}) RETURN x.sporadic_commission, labels(x)
+    commissions = {
+        "RM": {"continuous": 0.03, "sporadic": 0.06, "high_cost": 0.08},
+        "RD": {"continuous": 0.04, "sporadic": 0.07, "high_cost": 0.09},
+        "RP1": {"continuous": 0.20, "sporadic": 0.30, "high_cost": 0.40},
+        "RP2": {"continuous": 0.25, "sporadic": 0.35, "high_cost": 0.50},
+        "RP3": {"continuous": 0.34, "sporadic": 0.47, "high_cost": 0.69},
+        "RG": {"continuous": 0.05, "sporadic": 0.08, "high_cost": 0.10},
+        "RC": {"continuous": 0.10, "sporadic": 0.12, "high_cost": 0.20},
+        "RV": {"continuous": 0.15, "sporadic": 0.20, "high_cost": 0.30},
+    }
 
-    # >>>>>> RETORNA O COMISSIONAMENTO DE ACORDO COM O TIPO DE MEDICAMENTO
-    # MATCH path = (x)<-[:SUBORDINATED_TO*0..]-()
-    # WITH x, labels(x) AS label_list, x.continuous_commission AS commission
-    # UNWIND label_list AS label
-    # RETURN commission, COLLECT(DISTINCT label) AS unique_labels
     try:
         query = (
-            "MATCH path = (x)<-[:SUBORDINATED_TO*0..]-()"
-            f" WITH x, labels(x) AS label_list, x.{commission.type_commission} AS commission"
-            " UNWIND label_list AS label"
-            " RETURN commission, COLLECT(DISTINCT label) AS label"
+            f"MATCH path = (:{commission.user.role}"
+            "{name:"
+            f"'{commission.user.name}'"
+            "})-[:SUBORDINATED_TO*0..]->(:RM) RETURN path"
         )
         result = session.run(query)
+        if not result.peek():
+            return "No user was found with the characteristics reported. Check the information and try again!"
+        hierarchy = []
+        labels = []
+        for record in result:
+            path = record["path"]
+            for node in path.nodes:
+                label = list(node.labels)[0]
+                hierarchy.append({"name": node["name"], "position": label})
+                labels.append(label)
 
-        data = {
-            record["label"][0]: record["commission"] * commission.value
-            for record in result
-        }
-        return data
+        default_roles = [
+            ["RV", "RC", "RG", "RD", "RM"],
+            ["RP1", "RM"],
+            ["RP2", "RM"],
+            ["RP3", "RM"],
+        ]
+
+        commissions_values = {}
+        roles = default_roles[find_index(default_roles, labels[0])[0]]
+
+        for label in labels:
+            if label in commissions_values:
+                hierarchy.pop(0)
+                aux = commissions_values[label]
+
+                commissions_values[label] = []
+                commissions_values[label].append(aux)
+                commissions_values[label].append(
+                    {
+                        "name": [
+                            item["name"]
+                            for item in hierarchy
+                            if item["position"] == label
+                        ][0],
+                        "commission": 0.0,
+                    }
+                )
+            else:
+                while True:
+                    role = roles.pop(0)
+                    if label not in commissions_values:
+                        commissions_values[label] = {
+                            "name": [
+                                item["name"]
+                                for item in hierarchy
+                                if item["position"] == label
+                            ][0],
+                            "commission": 0.0,
+                        }
+
+                    commissions_values[label]["commission"] += (
+                        commissions[role][commission.type_commission] * commission.value
+                    )
+                    if role == label:
+                        break
+        return commissions_values
     except Exception as e:
         print(f"Erro: {e}")
 
