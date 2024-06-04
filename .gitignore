@@ -143,3 +143,4 @@ GitHub.sublime-settings
 tmp/
 data/*
 neo4j_db/*
+data.md

@@ -60,6 +60,13 @@ MATCH (n) RETURN n ## SHOW ALL DATA
 
 Create an `.env` file based on `.env.example` and define its information.
 
+
+## Run API
+
+```shell
+python src/app.py 
+```
+
 ## View documentation about queries
 
 `http://127.0.0.1:PORT/docs` or `http://127.0.0.1:PORT/redoc`
