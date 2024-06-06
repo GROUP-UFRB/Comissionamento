@@ -43,10 +43,10 @@ def insert_all_employees(session, supervisors, employee_type):
     }
 
     employee_dao = dao_mapping[employee_type](session)
-
     with open(f"{DATA_PATH}/{employee_type}.json") as file:
         data = json.load(file)
         employees_payload = []
+        data_to_insert=[]
         for employee in data:
             supervisor = next(
                 (
@@ -57,31 +57,18 @@ def insert_all_employees(session, supervisors, employee_type):
                 False,
             )
             if supervisor:
-                id = employee_dao.create(employee["name"], supervisor["db_id"])
-                employees_payload.append({"id": employee["id"], "db_id": id})
+                data_to_insert.append({"name": employee["name"], "manager_id": supervisor["db_id"]})
+ 
+        if len(data_to_insert)>0:
+            print(f"    {employee_type} insertion...{len(data_to_insert)}")
+            result= employee_dao.insert_many(data_to_insert)
+            print(f"    {employee_type} insertion...OK")
+            index=0
+            for id in result:
+                employees_payload.append({"id": data[index]["id"], "db_id": id})
+                index=index+1
+        
     return employees_payload
-
-
-def set_commission(session):
-    commissions = [
-        ("RM", 0.03, 0.06, 0.08),
-        ("RD", 0.04, 0.07, 0.09),
-        ("RP1", 0.20, 0.30, 0.40),
-        ("RP2", 0.25, 0.35, 0.50),
-        ("RP3", 0.34, 0.47, 0.69),
-        ("RG", 0.05, 0.08, 0.10),
-        ("RC", 0.10, 0.12, 0.20),
-        ("RV", 0.15, 0.20, 0.30),
-    ]
-
-    for label, continuous, sporadic, high_cost in commissions:
-        query = (
-            f"MATCH (n: {label}) "
-            f"SET n.continuous_commission = {continuous}, "
-            f"n.sporadic_commission = {sporadic}, "
-            f"n.high_cost_commission = {high_cost} "
-        )
-        session.run(query)
 
 
 def run():
@@ -105,9 +92,6 @@ def run():
         insert_all_employees(session, rcs, "rv")
         print(" RVS insertion...Ok")
         print(">>>Insertion Finished!<<<")
-        print("\nStarting commissioning insertion...")
-        set_commission(session)
-        print(">>>Commissioning insertion completed!<<<")
 
     driver.close()
 

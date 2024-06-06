@@ -101,24 +101,37 @@ async def get_superior_hierarchy_of(
 @app.get("/get_hierarchy_with_fails")
 async def get_hierarchy_with_fails():
     """
-    Identificar hierarquias com lacunas (ex.: hierarquias que não possuem um determinado nível como o RG, hierarquias sem RV, etc.)
+    Identificar hierarquias com lacunas
+    Exemplo :
+    - Hierarquias sem o RD,RG,RC mas com RV
+    - Nós sem relação alguma
+    - RM sem RV e RP1,RP2,RP3
+    - Hierarquias sem RM
     """
     try:
         query = (
-            "MATCH (rm:RM) "
-            "MATCH path = (rm)-[:MANAGES*]-(rv:RV) "
-            "WHERE length(path) < 4 OR none(p IN nodes(path) WHERE 'RV' IN labels(p)) "
-            "RETURN rm, path "
-            "UNION "
-            "MATCH (rm:RM) "
-            "WHERE NOT EXISTS { MATCH (rm)-[:MANAGES*]-(rp1:RP1) } "
-            "AND NOT EXISTS { MATCH (rm)-[:MANAGES*]-(rp2:RP2) } "
-            "AND NOT EXISTS { MATCH (rm)-[:MANAGES*]-(rp3:RP3) } "
-            "AND NOT EXISTS { "
-            "    MATCH path = (rm)-[:MANAGES*]-(rv:RV) "
-            "    WHERE length(path) = 4 AND any(p IN nodes(path) WHERE 'RV' IN labels(p)) "
-            "} "
-            "RETURN rm, NULL as path"
+            "MATCH (root:RM)"
+            "OPTIONAL MATCH  path0 = (root)-[:MANAGES*]-(rv:RV) "
+            "OPTIONAL MATCH  path1 = (root)-[:MANAGES*]-(rp1:RP1) "
+            "OPTIONAL MATCH  path2 = (root)-[:MANAGES*]-(rp2:RP2) "
+            "OPTIONAL MATCH  path3 = (root)-[:MANAGES*]-(rp3:RP3) "
+            "with root,path0,path1,path2,path3",
+            "WHERE length(path0) < 4 OR none(p IN nodes(path0) WHERE 'RV' IN labels(p)) "
+            "OR (path0 is NULL AND path1 is NULL AND path2 is NULL AND path3 is NULL)"
+            "return root,path0 as path"
+            "UNION"
+            "MATCH (root)"
+            "WHERE NOT (root)--()"
+            "RETURN root,NULL as path"
+            "UNION"
+            "MATCH (root)"
+            "MATCH path = (root)-[:SUBORDINATED_TO]-(result) "
+            "WHERE none(p IN nodes(path) WHERE 'RM' IN labels(p))"
+            "AND NOT EXISTS {"
+            "MATCH path1=(root)-[:SUBORDINATED_TO*]->(rm:RM)"
+            "return path1"
+            "}"
+            "return root, path"
         )
         result = session.run(query)
         return result.data()
@@ -126,7 +139,7 @@ async def get_hierarchy_with_fails():
         print(f"Erro: {e}")
 
 
-@app.get("/compute_commission")
+@ app.get("/compute_commission")
 async def compute_commission(commission: Commission):
     """
     Calcular o comissionamento de um medicamento a partir do seu tipo e o seu valor bruto
@@ -148,7 +161,7 @@ async def compute_commission(commission: Commission):
         print(f"Erro: {e}")
 
 
-@app.delete("/reset_db", status_code=204)
+@ app.delete("/reset_db", status_code=204)
 async def reset_db():
     """
     Limpar o banco de dados

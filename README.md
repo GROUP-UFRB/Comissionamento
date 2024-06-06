@@ -54,6 +54,7 @@ python src/insert.py
 ```shell
 MATCH (n) DETACH DELETE n ## DELETE ALL DATA
 MATCH (n) RETURN n ## SHOW ALL DATA
+MATCH (a) WHERE id(a) = 54  DETACH DELETE a ## 
 ```
 
 ## Set information to run

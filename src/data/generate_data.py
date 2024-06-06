@@ -38,11 +38,19 @@ PERCENTAGE_OF_POPULATION = {
 def write_data(data):
     os.system(f'rm -f data/*')
     Path("data").mkdir(parents=True, exist_ok=True)
+    payload={}
     for tree in data:
         for key in tree.keys():
-            payload = tree[str(key)]
+            items = tree[str(key)]
+            if key not in payload:
+                payload[key]=[]
+            for item in items:
+                payload[key].append(item)
+
+    for key in payload.keys():
+            payload_to_insert = payload[str(key)]
             with open(f"data/{key.lower()}.json", 'a', encoding='utf-8') as file:
-                json.dump(payload, file, ensure_ascii=False)
+                json.dump(payload_to_insert, file, ensure_ascii=False)
 
 
 def generate_cpf():
@@ -66,13 +74,16 @@ def generate_persons(n, subordinate_of):
         p = new_person()
         p["subordinateOf"] = subordinate_of
         data.append(p)
+        print(f'\rProcessing Person {i+1}/{n}...', end='')
+    print('\n Generate persons complete!')
     return data
 
 
-def generate_new_three(layers_number, layers_element_numbers):
+def generate_new_tree(layers_number, layers_element_numbers):
     rm = new_person()
     tree = {"RM": [rm]}
     for layear_number in range(1, layers_number+1):
+        print(f'\rGenerate Tree {layear_number+1}/{layers_number+1}', end='')
         layear_labels = LAYERS[str(layear_number)]
         for label in layear_labels:
             if label not in tree:
@@ -87,14 +98,14 @@ def generate_new_three(layers_number, layers_element_numbers):
                 for overlayer in overlayer_items:
                     tree[label]=tree[label]+generate_persons(number_of_elements, overlayer["id"])
 
-            print(f"Generated {number_of_elements} -> {label}")
+            print(f"\nGenerated {number_of_elements} -> {label}")
     return tree
 
 
 def generate(rm_number, layers_number, element_numbers):
     data = []
     for i in range(rm_number):
-        data.append(generate_new_three(layers_number, element_numbers))
+        data.append(generate_new_tree(layers_number, element_numbers))
     write_data(data)
 
 
@@ -110,11 +121,11 @@ if __name__ == "__main__":
     rm_number = args.rm_number
     layers_number = args.layers_number
     element_numbers = args.element_numbers
-    if rm_number is None or rm_number < 0:
+    if rm_number is None or int(rm_number) < 0:
         rm_number = 1
     if layers_number is None or layers_number < 0 or layers_number < 1:
         layers_number = 4
     if element_numbers is None or element_numbers < 0 or element_numbers < 20:
         element_numbers = 20
 
-    generate(rm_number, layers_number, element_numbers)
+    generate(int(rm_number), layers_number, element_numbers)
