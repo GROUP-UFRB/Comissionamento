@@ -60,9 +60,8 @@ def insert_all_employees(session, supervisors, employee_type):
                 data_to_insert.append({"name": employee["name"], "manager_id": supervisor["db_id"]})
  
         if len(data_to_insert)>0:
-            print(f"    {employee_type} insertion...{len(data_to_insert)}")
+            print(f"    start {employee_type} insertion:{len(data_to_insert)}")
             result= employee_dao.insert_many(data_to_insert)
-            print(f"    {employee_type} insertion...OK")
             index=0
             for id in result:
                 employees_payload.append({"id": data[index]["id"], "db_id": id})
@@ -76,21 +75,36 @@ def run():
     print("Start insertion...")
     with driver.session() as session:
         rms = insert_all_rms(session)
-        print(" RM insertion...Ok")
+        leaders_list=[]
+        leaders_list.append(rms)
+        print(" RM insertion...[Ok]")
+        print(" RP1 start insertion...")
         insert_all_employees(session, rms, "rp1")
-        print(" RP1 insertion...Ok")
+        print(" RP1 insertion...[Ok]")
+        print(" RP2 start insertion...")
         insert_all_employees(session, rms, "rp2")
-        print(" RP2 insertion...Ok")
+        print(" RP2 insertion...[Ok]")
+        print(" RP3 start insertion...")
         insert_all_employees(session, rms, "rp3")
-        print(" RP3 insertion...Ok")
-        rds = insert_all_employees(session, rms, "rd")
-        print(" RDS insertion...Ok")
-        rgs = insert_all_employees(session, rds, "rg")
-        print(" RGS insertion...Ok")
-        rcs = insert_all_employees(session, rgs, "rc")
-        print(" RCS insertion...Ok")
-        insert_all_employees(session, rcs, "rv")
-        print(" RVS insertion...Ok")
+        print(" RP3 insertion...[Ok]")
+        print(" RDS start insertion...")
+        rds = insert_all_employees(session, leaders_list[-1], "rd")
+        if(len(rds)>0):
+            leaders_list.append(rds)
+        print(" RDS insertion...[Ok]")
+        print(" RGS start insertion...")
+        rgs = insert_all_employees(session, leaders_list[-1], "rg")
+        if(len(rgs)>0):
+            leaders_list.append(rgs)
+        print(" RGS insertion...[Ok]")
+        print(" RCS start insertion...")
+        rcs = insert_all_employees(session, leaders_list[-1], "rc")
+        if(len(rcs)>0):
+            leaders_list.append(rcs)
+        print(" RCS insertion...[Ok]")
+        print(" RVS start insertion...")
+        insert_all_employees(session, leaders_list[-1], "rv")
+        print(" RVS insertion...[Ok]")
         print(">>>Insertion Finished!<<<")
 
     driver.close()
